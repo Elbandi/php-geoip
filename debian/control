@@ -1,0 +1,20 @@
+Source: php-geoip
+Section: php
+Priority: optional
+Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+XSBC-Original-Maintainer: Sergey B Kirpichev <skirpichev@gmail.com>
+Build-Depends: debhelper (>= 5), php5-dev (>= 5.3.1), libgeoip-dev (>= 1.4.0)
+Standards-Version: 3.8.1
+Homepage: http://pecl.php.net/package/geoip/
+
+Package: php5-geoip
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${php:Depends}, php5-common
+Description: GeoIP module for php5
+ This PHP module allows you to find the location of an IP address -
+ City, State, Country, Longitude, Latitude, and other information as
+ all, such as ISP and connection type.
+ .
+ For more info, please visit Maxmind's website:
+ http://www.maxmind.com/
+

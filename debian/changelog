@@ -1,0 +1,62 @@
+php-geoip (1.0.7-1ubuntu1) lucid; urgency=low
+
+  * Rebuild for PHP 5.3 
+
+ -- Chuck Short <zulcss@ubuntu.com>  Tue, 02 Mar 2010 10:32:51 -0500
+
+php-geoip (1.0.7-1) unstable; urgency=low
+
+  * New upstream release.
+  * Change copyright format.
+  * Set package Section to php. 
+
+ -- Sergey B Kirpichev <skirpichev@gmail.com>  Sun, 29 Mar 2009 14:04:05 +0400
+
+php-geoip (1.0.6-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Sergey B Kirpichev <skirpichev@gmail.com>  Sat, 24 Jan 2009 17:00:37 +0300
+
+php-geoip (1.0.5-1) unstable; urgency=low
+
+  * New upstream release.
+  * Update the Standards-Version to 3.8.0.
+  * Add ${misc:Depends}. 
+
+ -- Sergey B Kirpichev <skirpichev@gmail.com>  Thu, 25 Dec 2008 22:02:04 +0300
+
+php-geoip (1.0.3-1) unstable; urgency=low
+
+  * New upstream release
+  * Remove cvs entry from debian/copyright
+
+ -- Sergey B Kirpichev <skirpichev@gmail.com>  Fri, 13 Jun 2008 03:31:11 +0400
+
+php-geoip (1.0.2-4) unstable; urgency=low
+
+  * Fix license issues, it's the PHP 3.01 now
+  * Add the link to the commit with 3.01
+  * Tune short description
+  * Fix uscan handling 
+
+ -- Sergey B Kirpichev <skirpichev@gmail.com>  Fri, 13 Jun 2008 03:23:24 +0400
+
+php-geoip (1.0.2-3) unstable; urgency=low
+
+  * Add Homepage field
+  * Drop CFLAGS handling in rules
+
+ -- Sergey B Kirpichev <skirpichev@gmail.com>  Wed, 28 May 2008 22:55:38 +0400
+
+php-geoip (1.0.2-2) unstable; urgency=low
+
+  * Correct description
+
+ -- Sergey B Kirpichev <skirpichev@gmail.com>  Fri, 23 May 2008 18:10:38 +0400
+
+php-geoip (1.0.2-1) unstable; urgency=low
+
+  * Initial Release (Closes: #478051)
+
+ -- Sergey B Kirpichev <skirpichev@gmail.com>  Sat, 26 Apr 2008 19:56:04 +0400

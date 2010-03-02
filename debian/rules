@@ -1,0 +1,66 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+PECL_PKG_NAME=geoip
+
+configure: configure-stamp
+configure-stamp:
+	cp -a ${PECL_PKG_NAME}-*/* .
+	dh_testdir
+	phpize5
+	./configure -q \
+		--prefix=/usr \
+		--enable-${PECL_PKG_NAME}=shared \
+		--with-php-config=/usr/bin/php-config5
+	touch configure-stamp
+
+build: build-stamp
+
+build-stamp: configure-stamp 
+	dh_testdir
+	$(MAKE)
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+	[ ! -f Makefile ] || $(MAKE) distclean
+	[ ! -f configure ] || phpize5 --clean
+	dh_clean
+	ls -1|sed '/debian/d;/${PECL_PKG_NAME}-[0-9.]\+$$/d;/package\.xml/d'|xargs rm -rf
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k 
+	dh_installdirs
+	$(MAKE) INSTALL_ROOT=debian/php5-${PECL_PKG_NAME} install
+	install -m0755 -d -D debian/php5-${PECL_PKG_NAME}/etc/php5/conf.d/
+	echo 'extension=${PECL_PKG_NAME}.so' > debian/php5-${PECL_PKG_NAME}/etc/php5/conf.d/${PECL_PKG_NAME}.ini
+
+# Build architecture-independent files here.
+binary-indep: build install
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs ChangeLog
+	dh_installdocs
+	dh_installexamples
+	dh_installdebconf       
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	echo "php:Depends=phpapi-`php-config5 --phpapi`" >> debian/php5-${PECL_PKG_NAME}.substvars
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install configure
