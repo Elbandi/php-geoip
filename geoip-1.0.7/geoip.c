@@ -105,6 +105,7 @@ static void php_geoip_init_globals(zend_geoip_globals *geoip_globals)
  */
 PHP_MINIT_FUNCTION(geoip)
 {
+	int edition;
 	ZEND_INIT_MODULE_GLOBALS(geoip, php_geoip_init_globals, NULL);
 	REGISTER_INI_ENTRIES();
 	
@@ -135,6 +136,15 @@ PHP_MINIT_FUNCTION(geoip)
 	REGISTER_LONG_CONSTANT("GEOIP_CABLEDSL_SPEED",      GEOIP_CABLEDSL_SPEED,      CONST_CS | CONST_PERSISTENT);
 	REGISTER_LONG_CONSTANT("GEOIP_CORPORATE_SPEED",     GEOIP_CORPORATE_SPEED,     CONST_CS | CONST_PERSISTENT);
 	
+	for (edition=0; edition < NUM_DB_TYPES; edition++)
+	{
+		if (GeoIP_db_avail(edition))
+		{
+			GEOIP_G(gi[edition]) = GeoIP_open_type(edition, GEOIP_MEMORY_CACHE);
+		} else {
+			GEOIP_G(gi[edition]) = NULL;
+		}
+	}
 	return SUCCESS;
 }
 /* }}} */
@@ -143,6 +153,12 @@ PHP_MINIT_FUNCTION(geoip)
  */
 PHP_MSHUTDOWN_FUNCTION(geoip)
 {
+	int i;
+
+	for (i=0; i < NUM_DB_TYPES; i++)
+	{
+		if (GEOIP_G(gi[i])) GeoIP_delete(GEOIP_G(gi[i]));
+	}
 	return SUCCESS;
 }
 /* }}} */
@@ -196,7 +212,7 @@ PHP_FUNCTION(geoip_db_avail)
 		return;
 	}
 	
-	RETURN_BOOL(GeoIP_db_avail(edition));    
+	RETURN_BOOL(GEOIP_G(gi[edition]));
 }
 /* }}} */
 
@@ -263,18 +279,15 @@ PHP_FUNCTION(geoip_database_info)
 		return;
 	}
 	
-	if (GeoIP_db_avail(edition)) {
-		gi = GeoIP_open_type(edition, GEOIP_STANDARD);
-	} else {
+	if (!GEOIP_G(gi[edition])) {
 		if (NULL != GeoIPDBFileName[edition])
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_COUNTRY_EDITION]);
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[edition]);
 		else
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available.");
 		return;
 	}
 	
-	db_info = GeoIP_database_info(gi);
-	GeoIP_delete(gi);
+	db_info = GeoIP_database_info(GEOIP_G(gi[edition]));
 
 	RETVAL_STRING(db_info, 1);
 	free(db_info);
@@ -285,7 +298,6 @@ PHP_FUNCTION(geoip_database_info)
    Return the Country Code found in the GeoIP Database */
 PHP_FUNCTION(geoip_country_code_by_name)
 {
-	GeoIP * gi;
 	char * hostname = NULL;
 	const char * country_code;
 	int arglen;
@@ -294,15 +306,12 @@ PHP_FUNCTION(geoip_country_code_by_name)
 		return;
 	}
 
-	if (GeoIP_db_avail(GEOIP_COUNTRY_EDITION)) {
-		gi = GeoIP_open_type(GEOIP_COUNTRY_EDITION, GEOIP_STANDARD);
-	} else {
+	if (!GEOIP_G(gi[GEOIP_COUNTRY_EDITION])) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_COUNTRY_EDITION]);
 		return;
 	}
 	
-	country_code = GeoIP_country_code_by_name(gi, hostname);
-	GeoIP_delete(gi);
+	country_code = GeoIP_country_code_by_name(GEOIP_G(gi[GEOIP_COUNTRY_EDITION]), hostname);
 	if (country_code == NULL) {
 		php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Host %s not found", hostname);
 		RETURN_FALSE;
@@ -315,7 +324,6 @@ PHP_FUNCTION(geoip_country_code_by_name)
    Return the Country Code found in the GeoIP Database */
 PHP_FUNCTION(geoip_country_code3_by_name)
 {
-	GeoIP * gi;
 	char * hostname = NULL;
 	const char * country_code;
 	int arglen;
@@ -324,15 +332,12 @@ PHP_FUNCTION(geoip_country_code3_by_name)
 		return;
 	}
 
-	if (GeoIP_db_avail(GEOIP_COUNTRY_EDITION)) {
-		gi = GeoIP_open_type(GEOIP_COUNTRY_EDITION, GEOIP_STANDARD);
-	} else {
+	if (!GEOIP_G(gi[GEOIP_COUNTRY_EDITION])) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_COUNTRY_EDITION]);
 		return;
 	}
 	
-	country_code = GeoIP_country_code3_by_name(gi, hostname);
-	GeoIP_delete(gi);
+	country_code = GeoIP_country_code3_by_name(GEOIP_G(gi[GEOIP_COUNTRY_EDITION]), hostname);
 	if (country_code == NULL) {
 		php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Host %s not found", hostname);
 		RETURN_FALSE;
@@ -345,7 +350,6 @@ PHP_FUNCTION(geoip_country_code3_by_name)
    Returns the Country name found in the GeoIP Database */
 PHP_FUNCTION(geoip_country_name_by_name)
 {
-	GeoIP * gi;
 	char * hostname = NULL;
 	const char * country_name;
 	int arglen;
@@ -354,15 +358,12 @@ PHP_FUNCTION(geoip_country_name_by_name)
 		return;
 	}
 
-	if (GeoIP_db_avail(GEOIP_COUNTRY_EDITION)) {
-		gi = GeoIP_open_type(GEOIP_COUNTRY_EDITION, GEOIP_STANDARD);
-	}   else {
+	if (!GEOIP_G(gi[GEOIP_COUNTRY_EDITION])) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_COUNTRY_EDITION]);
 		return;
 	}
 
-	country_name = GeoIP_country_name_by_name(gi, hostname);
-	GeoIP_delete(gi);
+	country_name = GeoIP_country_name_by_name(GEOIP_G(gi[GEOIP_COUNTRY_EDITION]), hostname);
 	if (country_name == NULL) {
 		php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Host %s not found", hostname);
 		RETURN_FALSE;
@@ -375,7 +376,6 @@ PHP_FUNCTION(geoip_country_name_by_name)
    Returns the Continent name found in the GeoIP Database */
 PHP_FUNCTION(geoip_continent_code_by_name)
 {
-	GeoIP * gi;
 	char * hostname = NULL;
 	int id;
 	int arglen;
@@ -384,15 +384,12 @@ PHP_FUNCTION(geoip_continent_code_by_name)
 		return;
 	}
 
-	if (GeoIP_db_avail(GEOIP_COUNTRY_EDITION)) {
-		gi = GeoIP_open_type(GEOIP_COUNTRY_EDITION, GEOIP_STANDARD);
-	}   else {
+	if (!GEOIP_G(gi[GEOIP_COUNTRY_EDITION])) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_COUNTRY_EDITION]);
 		return;
 	}
 
-	id = GeoIP_id_by_name(gi, hostname);
-	GeoIP_delete(gi);
+	id = GeoIP_id_by_name(GEOIP_G(gi[GEOIP_COUNTRY_EDITION]), hostname);
 	if (id == 0) {
 		php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Host %s not found", hostname);
 		RETURN_FALSE;
@@ -405,7 +402,6 @@ PHP_FUNCTION(geoip_continent_code_by_name)
    Returns the Organization Name found in the GeoIP Database */
 PHP_FUNCTION(geoip_org_by_name)
 {
-	GeoIP * gi;
 	char * hostname = NULL;
 	char * org;
 	int arglen;
@@ -414,15 +410,12 @@ PHP_FUNCTION(geoip_org_by_name)
 		return;
 	}
 	
-	if (GeoIP_db_avail(GEOIP_ORG_EDITION)) {
-		gi = GeoIP_open_type(GEOIP_ORG_EDITION, GEOIP_STANDARD);
-	}   else {
+	if (!GEOIP_G(gi[GEOIP_ORG_EDITION])) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_ORG_EDITION]);
 		return;
 	}
 
-	org = GeoIP_org_by_name(gi, hostname);
-	GeoIP_delete(gi);
+	org = GeoIP_org_by_name(GEOIP_G(gi[GEOIP_ORG_EDITION]), hostname);
 	if (org == NULL) {
 		php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Host %s not found", hostname);
 		RETURN_FALSE;
@@ -445,11 +438,11 @@ PHP_FUNCTION(geoip_record_by_name)
 		return;
 	}
 
-	if (GeoIP_db_avail(GEOIP_CITY_EDITION_REV1) || GeoIP_db_avail(GEOIP_CITY_EDITION_REV0)) {
-		if (GeoIP_db_avail(GEOIP_CITY_EDITION_REV1)) {
-			gi = GeoIP_open_type(GEOIP_CITY_EDITION_REV1, GEOIP_STANDARD);
+	if (GEOIP_G(gi[GEOIP_CITY_EDITION_REV1]) || GEOIP_G(gi[GEOIP_CITY_EDITION_REV0])) {
+		if (GEOIP_G(gi[GEOIP_CITY_EDITION_REV1])) {
+			gi = GEOIP_G(gi[GEOIP_CITY_EDITION_REV1]);
 		} else {
-			gi = GeoIP_open_type(GEOIP_CITY_EDITION_REV0, GEOIP_STANDARD);
+			gi = GEOIP_G(gi[GEOIP_CITY_EDITION_REV0]);
 		}
 	}   else {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_CITY_EDITION_REV0]);
@@ -457,8 +450,6 @@ PHP_FUNCTION(geoip_record_by_name)
 	}
 	gir = GeoIP_record_by_name(gi, hostname);
 
-	GeoIP_delete(gi);
-	
 	if (NULL == gir) {
 		php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Host %s not found", hostname);
 		RETURN_FALSE;
@@ -491,7 +482,6 @@ PHP_FUNCTION(geoip_record_by_name)
    Returns the Net Speed found in the GeoIP Database */
 PHP_FUNCTION(geoip_id_by_name)
 {
-	GeoIP * gi;
 	char * hostname = NULL;
 	int arglen;
 	int netspeed;
@@ -500,15 +490,12 @@ PHP_FUNCTION(geoip_id_by_name)
 		return;
 	}
 
-	if (GeoIP_db_avail(GEOIP_NETSPEED_EDITION)) {
-		gi = GeoIP_open_type(GEOIP_NETSPEED_EDITION, GEOIP_STANDARD);
-	}   else {
+	if (!GEOIP_G(gi[GEOIP_NETSPEED_EDITION])) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_NETSPEED_EDITION]);
 		return;
 	}
 
-	netspeed = GeoIP_id_by_name(gi, hostname);
-	GeoIP_delete(gi);
+	netspeed = GeoIP_id_by_name(GEOIP_G(gi[GEOIP_NETSPEED_EDITION]), hostname);
 	RETURN_LONG(netspeed);
 }
 /* }}} */
@@ -526,11 +513,11 @@ PHP_FUNCTION(geoip_region_by_name)
 		return;
 	}
 
-	if (GeoIP_db_avail(GEOIP_REGION_EDITION_REV0) || GeoIP_db_avail(GEOIP_REGION_EDITION_REV1)) {
-		if (GeoIP_db_avail(GEOIP_REGION_EDITION_REV1)) {
-			gi = GeoIP_open_type(GEOIP_REGION_EDITION_REV1, GEOIP_STANDARD);
+	if (GEOIP_G(gi[GEOIP_CITY_EDITION_REV1]) || GEOIP_G(gi[GEOIP_CITY_EDITION_REV0])) {
+		if (GEOIP_G(gi[GEOIP_CITY_EDITION_REV1])) {
+			gi = GEOIP_G(gi[GEOIP_CITY_EDITION_REV1]);
 		} else {
-			gi = GeoIP_open_type(GEOIP_REGION_EDITION_REV0, GEOIP_STANDARD);
+			gi = GEOIP_G(gi[GEOIP_CITY_EDITION_REV0]);
 		}
 	}   else {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_REGION_EDITION_REV0]);
@@ -538,7 +525,6 @@ PHP_FUNCTION(geoip_region_by_name)
 	}
 
 	region = GeoIP_region_by_name(gi, hostname);
-	GeoIP_delete(gi);
 
 	if (NULL == region) {
 		php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Host %s not found", hostname);
@@ -557,7 +543,6 @@ PHP_FUNCTION(geoip_region_by_name)
    Returns the ISP Name found in the GeoIP Database */
 PHP_FUNCTION(geoip_isp_by_name)
 {
-	GeoIP * gi;
 	char * hostname = NULL;
 	char * isp;
 	int arglen;
@@ -566,15 +551,12 @@ PHP_FUNCTION(geoip_isp_by_name)
 		return;
 	}
 	
-	if (GeoIP_db_avail(GEOIP_ISP_EDITION)) {
-		gi = GeoIP_open_type(GEOIP_ISP_EDITION, GEOIP_STANDARD);
-	}   else {
+	if (!GEOIP_G(gi[GEOIP_ISP_EDITION])) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Required database not available at %s.", GeoIPDBFileName[GEOIP_ISP_EDITION]);
 		return;
 	}
 
-	isp = GeoIP_name_by_name(gi, hostname);
-	GeoIP_delete(gi);
+	isp = GeoIP_name_by_name(GEOIP_G(gi[GEOIP_ISP_EDITION]), hostname);
 	if (isp == NULL) {
 		php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Host %s not found", hostname);
 		RETURN_FALSE;
@@ -588,7 +570,6 @@ PHP_FUNCTION(geoip_isp_by_name)
    Returns the region name for some country code and region code combo */
 PHP_FUNCTION(geoip_region_name_by_code)
 {
-	GeoIP * gi;
 	char * country_code = NULL;
 	char * region_code = NULL;
 	const char * region_name;
@@ -617,7 +598,6 @@ PHP_FUNCTION(geoip_region_name_by_code)
    Returns the time zone for some country code and region code combo */
 PHP_FUNCTION(geoip_time_zone_by_country_and_region)
 {
-	GeoIP * gi;
 	char * country = NULL;
 	char * region = NULL;
 	const char * timezone;
