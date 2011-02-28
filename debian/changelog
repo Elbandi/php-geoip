@@ -1,3 +1,11 @@
+php-geoip (1.0.7-1ubuntu1-0hst2) lucid; urgency=low
+
+  [ Andras Elso ]
+  * Add memcache support
+  * country nevek lekerdezese id alapjan
+
+ -- Andras Elso <ea333@freemail.hu>  Thu, 24 Feb 2011 22:52:15 +0000
+
 php-geoip (1.0.7-1ubuntu1) lucid; urgency=low
 
   * Rebuild for PHP 5.3 
